@@ -87,7 +87,37 @@ def get_viral_score(title, keywords=''):
     
     return min(score, 100)
 
-def scrape_news_item(url):
+@app.route('/api/scrape', methods=['POST'])
+def scrape_now():
+    """Trigger scraping with test data"""
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        c = conn.cursor()
+        
+        # Add test articles
+        test_articles = [
+            ('ข่าวสดใจ: เทคโนโลยี AI เปลี่ยนโลก', 'AI กำลังปฏิวัติวิธีการทำงาน', 'test_source', 'https://example.com/1', 85),
+            ('ชาวเน็ต ตั้ง 100 ข้อสงสัย', 'โลกออนไลน์เปี่ยมไปด้วยคำถาม', 'test_source', 'https://example.com/2', 75),
+            ('ดราม่าใหญ่บนโซเชียล', 'เรื่องฮอตที่ทำให้ชาวเน็ตอึ้ง', 'test_source', 'https://example.com/3', 90),
+        ]
+        
+        for title, summary, source, url, score in test_articles:
+            c.execute('''INSERT OR REPLACE INTO news 
+                       (title, summary, url, viral_score, published_date, source)
+                       VALUES (?, ?, ?, ?, ?, ?)''',
+                     (title, summary, url, score, datetime.now().isoformat(), source))
+        
+        conn.commit()
+        conn.close()
+        
+        return jsonify({
+            'success': True,
+            'scraped': len(test_articles),
+            'message': f'Added {len(test_articles)} test articles'
+        }), 200
+    except Exception as e:
+        logger.error(f"Error in scrape endpoint: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
     """Scrape a single news item"""
     try:
         headers = {
